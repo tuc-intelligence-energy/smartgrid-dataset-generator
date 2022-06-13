@@ -1,0 +1,9 @@
+ChargerType,ChargerRating,AC_DC,Rated_Power(kW)
+Regular electricity socket 13A,Slow,AC,3.0
+Single phase 16A,Slow,AC,3.7
+Single phase 32A,Fast,AC,7.4
+3 phase-16A per phase,Fast,AC,11.0
+3 phase-32A per phase,Fast,AC,22.0
+3 phase-60A per phase,Rapid,AC,43.0
+3 phase-DC,Rapid,DC,50.0
+3 phase-DC,Rapid,DC,120.0

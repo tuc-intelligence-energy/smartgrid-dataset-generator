@@ -1,0 +1,52 @@
+CarModel,BatteryCapacity(kWh),Maximum_DC_Charging_Power(kW),MeanEnergyConsumption(kWh/100km),Category
+Smart fortwo EQ,17.6,22,16.35,1
+Smart forfour EQ,17.6,22,17.0,1
+Mini Cooper SE,28.9,50,16.75,1
+Volkswagen e-up!,32.3,40,14.0,1
+Mazda MX-30,35.5,37,14.5,1
+Honda e,35.5,100,17.2,1
+Honda e Advance,35.5,100,17.5,1
+Skoda Citigo-e iV,36.8,40,15.45,1
+Hyundai Ioniq electric,38.3,100,13.8,1
+Hyundai Kona electric 39.2kWh,39.2,100,15.0,1
+Kia e-Niro 39.2kWh,39.2,100,15.3,1
+Kia e-Soul 39.2kWh,39.2,100,15.6,1
+Nissan Leaf,40.0,50,18.5,2
+Nissan e-NV200 evalia,40.0,50,25.9,2
+BMW i3,42.2,50,13.1,2
+BMW i3s,42.2,50,14.3,2
+DS DS3 Crossback e-tense,50.0,100,15.6,2
+Peugeot e-208,50.0,100,16.4,2
+Opel Corsa-e,50.0,100,16.65,2
+Opel Mokka-e,50.0,100,17.6,2
+Citroën ë-Spacetourer (M),50.0,100,25.2,2
+Renault Zoe R110,52.0,50,16.5,2
+Renault Zoe R135,52.0,50,16.5,2
+Tesla Model 3 Standard Range Plus,54.0,150,14.9,2
+Volkswagen ID.3 Pro Performance,58.0,100,15.4,2
+Nissan Leaf e+,62.0,100,17.1,2
+Hyundai Kona electric 64kWh,64.0,100,15.4,2
+Kia e-Soul 64kWh,64.0,100,15.7,2
+Kia e-Niro 64kWh,64.0,100,15.9,2
+Audi e-tron Sportback 50 quattro,71.0,150,23.3,3
+Audi e-tron 50 quattro,71.0,150,23.8,3
+Tesla Model 3 Long Range,75.0,150,16.0,3
+Tesla Model 3 Performance,75.0,150,16.6,3
+Volkswagen ID.3 Pro S,77.0,125,15.9,3
+Volkswagen ID.4 1st,77.0,125,18.0,3
+Porsche Taycan 4S (Performance),79.2,225,23.4,3
+BMW iX3,80.0,150,18.8,3
+Mercedes-Benz EQC,80.0,110,21.85,3
+Jaguar I-Pace,90.0,100,21.2,3
+Mercedes-Benz EQV (long),90.0,110,28.2,3
+Porsche Taycan 4S (Performance Plus),93.4,270,24.1,3
+Porsche Taycan Turbo,93.4,270,24.85,3
+Porsche Taycan Turbo S,93.4,270,25.1,3
+Audi e-tron Sportback 55 quattro,95.0,150,23.85,3
+Audi e-tron 55 quattro,95.0,150,24.45,3
+Audi e-tron Sportback S quattro,95.0,150,27.2,3
+Audi e-tron S quattro,95.0,150,27.55,3
+Tesla Model S Long Range Plus,100.0,150,19.0,3
+Tesla Model S Performance,100.0,150,19.3,3
+Tesla Model X Long Range Plus,100.0,150,22.6,3
+Tesla Model X Performance,100.0,150,23.6,3

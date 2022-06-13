@@ -1,0 +1,822 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Synthetic Dataset Generator</title>
+    <!-- CSS only -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-eOJMYsd53ii+scO/bJGFsiCZc+5NDVN2yr8+0RDqr0Ql0h+rP48ckxlpbzKgwra6" crossorigin="anonymous">
+<!--    <link rel="stylesheet" href="css/style.css">-->
+    <!-- JavaScript Bundle with Popper -->
+    <script src="https://code.jquery.com/jquery-3.5.1.js"></script>
+
+    <link href="https://cdn.datatables.net/1.10.24/css/jquery.dataTables.min.css" rel="stylesheet">
+    <script src="https://cdn.datatables.net/1.10.24/js/jquery.dataTables.min.js"></script>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta3/dist/js/bootstrap.bundle.min.js" integrity="sha384-JEW9xMcG8R+pH31jmWH6WWP0WintQrMb4s7ZOdauHnUtxwoG2vI5DkLtS3qm9Ekf" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@2.8.0"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/chartjs-chart-box-and-violin-plot/2.4.0/Chart.BoxPlot.min.js" integrity="sha512-wThQu2PZG8h1zgYe9HNYAblGSRzSeZ7g584vrTiizIZJHw7gG1LCDZsLy/YHVnw3lp7pXXNJNa4ilECz1DiqPA==" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/hammer.js/2.0.8/hammer.min.js" integrity="sha512-UXumZrZNiOwnTcZSHLOfcTs0aos2MzBWHXOHOuB0J/R44QB0dwY5JgfbvljXcklVf65Gc4El6RjZ+lnwd2az2g==" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/chartjs-plugin-zoom/0.7.7/chartjs-plugin-zoom.min.js" integrity="sha512-8E9fPF4pjWxI0dpprpn4WYeciAMo2kh6xN0COFxvTfurMttjZzih/sBp+Fxu49Zr6IUSp4sqWY6KLecnqOCwxA==" crossorigin="anonymous"></script>
+    <script src="https://cdn.plot.ly/plotly-1.54.6.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.js" integrity="sha512-uto9mlQzrs59VwILcLiRYeLKPPbS/bT71da/OEBYEwcdNUk8jYIy+D176RYoop1Da+f9mvkYrmj5MCLZWEtQuA==" crossorigin="anonymous"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.css" integrity="sha512-aOG0c6nPNzGk+5zjwyJaoRUgCdOrfSDhmMID2u4+OIslr0GjpLKo7Xm0Ao3xmpM4T8AmIouRkqwj1nrdVsLKEQ==" crossorigin="anonymous" />
+    <script src="https://d3js.org/d3.v4.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+        .faded {
+        opacity: 0;
+        transition: opacity 1s;
+        }
+
+        .emsg { color: #c12020; font-weight: bold; }
+
+    </style>
+
+    <script type="text/javascript">
+        var reqstr1 = "http://localhost:5004/api/v1/listInputFolder";
+        var reqstr2 = "http://localhost:5004/api/v1/runData";
+        var reqstr3 = "http://localhost:5004/api/v1/runFigures";
+
+
+        function init(){
+            var ul4 = document.getElementById("ct4");
+            fetch(reqstr1)
+            .then(res => {return res.json()})
+            .then(data => {/*output("Request complete! response:" + data); */resp=data;
+            resp.forEach(function (item) {
+              var el = document.createElement("option");
+              // var b = item.split('/');
+              el.textContent = item;
+              el.value = item;
+              ul4.appendChild(el);
+            });
+            }).catch(error => {showAlert(error,"alert-danger")});
+
+            updateMethodDesc()
+            updateConstModeDesc()
+
+<!--            showAlert("Connected and Loaded!","alert-success");-->
+        }
+
+
+        function updateMethodDesc(){
+          var temp = document.getElementById("method");
+          var temp1 = document.getElementById("methodDesc");
+          switch (temp.value){
+            case "HIST":
+              temp1.innerHTML = "Generate 'Energy Production and Consumption' data, using Histogram Sampling technique";
+              break;
+            case "KDE":
+              temp1.innerHTML = "Generate 'Energy Production and Consumption' data, using Kernel Density Estimation Sampling technique";
+              break;
+            case "TimeGAN":
+              temp1.innerHTML = "Generate 'Energy Production and Consumption' data, using Time-Series Generative Adversarial Network technique";
+              break;
+            default:
+              temp1.innerHTML = "Choose one of the 3 different techniques provided to generate data related to energy production and consumption";
+              break;
+          }
+        }
+
+        function updateConstModeDesc(){
+          var temp = document.getElementById("constraints");
+          var temp1 = document.getElementById("constDesc");
+          switch (temp.value){
+            case "Strict":
+              temp1.innerHTML = "Generate 'EVs and Drivers Behavior Data' data, using Strict constraints mode";
+              break;
+            case "Looser":
+              temp1.innerHTML = "Generate 'EVs and Drivers Behavior Data' data, using Looser constraints mode";
+              break;
+            case "Min":
+              temp1.innerHTML = "Generate 'EVs and Drivers Behavior Data' data, using Absolutely necessary mode";
+              break;
+            default:
+              temp1.innerHTML = "Choose one of the 3 different modes provided to better control how hard constraints will be enforced on 'EVs and Drivers Behavior Data'";
+              break;
+          }
+        }
+
+
+        $(function() {
+          $(".answer").hide();
+          $("#enableRolling").on("click",function() {
+            $(".answer").toggle(this.checked);
+          });
+        });
+
+        function showAlert(message, alertType){
+            var temp = document.getElementById("notification");
+            temp.innerHTML = message;
+            temp.classList.add("alert");
+            temp.classList.add(alertType);
+            temp.classList.add("fade");
+            temp.classList.add("show");
+            setTimeout(function () {
+            hideAlert();
+            }, 3000);
+        }
+
+        function hideAlert(){
+            var temp = document.getElementById("notification");
+            temp.className = 'alert fade';
+        }
+
+        function diff_months(dt2, dt1) {
+            var diff =(dt2.getTime() - dt1.getTime()) / 1000;
+            diff /= (60 * 60 * 24 * 7 * 4);
+            return Math.abs(Math.round(diff));
+        }
+
+        function checkTimeHor(){
+            var countTimeHor = 0;
+            var startDate = document.getElementById("yourStartDate");
+            var endDate = document.getElementById("yourEndDate");
+            var startDateAsDate = new Date(startDate.value);
+            var endDateAsDate = new Date(endDate.value);
+            var dateDiff = diff_months(endDateAsDate,startDateAsDate);
+            if (startDate.value == "") {
+               startDate.style.border ="2px solid red";
+               document.getElementById("startDateError").innerHTML = "<br><span style='color: red;'>* Field must not be empty</span>";
+               countTimeHor = countTimeHor + 1;
+            } else {
+                document.getElementById("startDateError").innerHTML = "";
+            }
+            if (endDate.value == "") {
+               endDate.style.border ="2px solid red";
+               document.getElementById("endDateError").innerHTML = "<br><span style='color: red;'>* Field must not be empty</span>";
+               countTimeHor = countTimeHor + 1;
+            } else {
+                document.getElementById("endDateError").innerHTML = "";
+            }
+            if (startDateAsDate > endDateAsDate){
+                   startDate.style.border ="2px solid red";
+                   endDate.style.border ="2px solid red";
+                   document.getElementById("diffDateError").innerHTML = "<br><span style='color: red;'>** End Date must be greater than Start Date</span>";
+                   countTimeHor = countTimeHor + 1;
+            } else {
+                if (dateDiff < 3){
+                   startDate.style.border ="2px solid red";
+                   endDate.style.border ="2px solid red";
+                   document.getElementById("diffDateError").innerHTML = "<br><span style='color: red;'>** Time Horizon must be at least 3 months</span>";
+                   countTimeHor = countTimeHor + 1;
+                } else {
+                    document.getElementById("diffDateError").innerHTML = "";
+                }
+            }
+            if (countTimeHor == 0){
+                 restoreBorder("yourStartDate")
+                 restoreBorder("yourEndDate")
+           }
+            return countTimeHor;
+        }
+
+        function checkNumEVs(){
+            var countNumEVs = 0;
+            var numOfEVsAsString = document.getElementById("numEVs");
+            var numOfEVs = parseInt(document.getElementById("numEVs").value);
+            if (numOfEVsAsString.value == "") {
+               numOfEVsAsString.style.border ="2px solid red";
+               document.getElementById("numEVsError").innerHTML = "<br><span style='color: red;'>* Field must not be empty</span>";
+               countNumEVs = countNumEVs + 1;
+            } else if (numOfEVs <= 0) {
+               numOfEVsAsString.style.border ="2px solid red";
+               document.getElementById("numEVsError").innerHTML = "<br><span style='color: red;'>* Value must be greater than or equal to 1</span>";
+               countNumEVs = countNumEVs + 1;
+            } else {
+                document.getElementById("numEVsError").innerHTML = "";
+            }
+            return countNumEVs;
+        }
+
+        function checkMethod(){
+            var countMethod = 0;
+            var method = document.getElementById("method");
+
+            if (method.value == "Default") {
+               method.style.border ="2px solid red";
+               document.getElementById("methodError").innerHTML = "<br><span style='color: red;'>* Field must not be empty</span>";
+               countMethod = countMethod + 1;
+            } else {
+                document.getElementById("methodError").innerHTML = "";
+            }
+            return countMethod;
+        }
+
+        function checkConstraints(){
+            var countConst = 0;
+            var constraints = document.getElementById("constraints");
+
+            if (constraints.value == "Default") {
+               constraints.style.border ="2px solid red";
+               document.getElementById("constError").innerHTML = "<br><span style='color: red;'>* Field must not be empty</span>";
+               countConst = countConst + 1;
+            } else {
+                document.getElementById("constError").innerHTML = "";
+            }
+            return countConst;
+        }
+
+        function checkEVCat(){
+            var countEVCat = 0;
+            var evCatAAsString = document.getElementById("catA");
+            var evCatBAsString = document.getElementById("catB");
+            var evCatCAsString = document.getElementById("catC");
+            var evCatA = parseInt(document.getElementById("catA").value);
+            var evCatB = parseInt(document.getElementById("catB").value);
+            var evCatC = parseInt(document.getElementById("catC").value);
+
+            if (evCatAAsString.value == "") {
+               evCatAAsString.style.border ="2px solid red";
+               document.getElementById("catAError").innerHTML = "<br><span style='color: red;'>* Field must not be empty</span>";
+               countEVCat = countEVCat + 1;
+            } else if ( evCatA<0 || evCatA>100) {
+               evCatAAsString.style.border ="2px solid red";
+               document.getElementById("catAError").innerHTML = "<br><span style='color: red;'>* Value must be from 0 to 100</span>";
+               countEVCat = countEVCat + 1;
+            } else {
+                document.getElementById("catAError").innerHTML = "";
+            }
+            if (evCatBAsString.value == "") {
+               evCatBAsString.style.border ="2px solid red";
+               document.getElementById("catBError").innerHTML = "<br><span style='color: red;'>* Field must not be empty</span>";
+               countEVCat = countEVCat + 1;
+            } else if ( evCatB<0 || evCatB>100) {
+               evCatBAsString.style.border ="2px solid red";
+               document.getElementById("catBError").innerHTML = "<br><span style='color: red;'>* Value must be from 0 to 100</span>";
+               countEVCat = countEVCat + 1;
+            } else {
+                document.getElementById("catBError").innerHTML = "";
+            }
+           if (evCatCAsString.value == "") {
+               evCatCAsString.style.border ="2px solid red";
+               document.getElementById("catCError").innerHTML = "<br><span style='color: red;'>* Field must not be empty</span>";
+               countEVCat = countEVCat + 1;
+           } else if ( evCatC<0 || evCatC>100) {
+                evCatCAsString.style.border ="2px solid red";
+                document.getElementById("catCError").innerHTML = "<br><span style='color: red;'>* Value must be from 0 to 100</span>";
+                countEVCat = countEVCat + 1;
+           } else {
+                document.getElementById("catCError").innerHTML = "";
+            }
+           if ( evCatA+evCatB+evCatC != 100) {
+                evCatAAsString.style.border ="2px solid red";
+                evCatBAsString.style.border ="2px solid red";
+                evCatCAsString.style.border ="2px solid red";
+                document.getElementById("catError").innerHTML = "<br><span style='color: red;'>*** Percentages of EVs Categories must sum up to 100</span>";
+                countEVCat = countEVCat + 1;
+           } else {
+                document.getElementById("catError").innerHTML = "";
+           }
+           if (countEVCat == 0){
+                 restoreBorder("catA")
+                 restoreBorder("catB")
+                 restoreBorder("catC")
+           }
+           return countEVCat;
+        }
+
+        function checkEVCharge(){
+            var countEVCharge = 0;
+            var slowAsString = document.getElementById("slow");
+            var fastAsString = document.getElementById("fast");
+            var rapidCAsString = document.getElementById("rapid");
+            var slow = parseInt(document.getElementById("slow").value);
+            var fast = parseInt(document.getElementById("fast").value);
+            var rapid = parseInt(document.getElementById("rapid").value);
+
+            if (slowAsString.value == "") {
+               slowAsString.style.border ="2px solid red";
+               document.getElementById("slowError").innerHTML = "<br><span style='color: red;'>* Field must not be empty</span>";
+               countEVCharge = countEVCharge + 1;
+            } else if ( slow<0 || slow>100) {
+               slowAsString.style.border ="2px solid red";
+               document.getElementById("slowError").innerHTML = "<br><span style='color: red;'>* Value must be from 0 to 100</span>";
+               countEVCharge = countEVCharge + 1;
+            }else {
+                document.getElementById("slowError").innerHTML = "";
+            }
+            if (fastAsString.value == "") {
+               fastAsString.style.border ="2px solid red";
+               document.getElementById("fastError").innerHTML = "<br><span style='color: red;'>* Field must not be empty</span>";
+               countEVCharge = countEVCharge + 1;
+            } else if ( fast<0 || fast>100) {
+               fastAsString.style.border ="2px solid red";
+               document.getElementById("fastError").innerHTML = "<br><span style='color: red;'>* Value must be from 0 to 100</span>";
+               countEVCharge = countEVCharge + 1;
+            }else {
+                document.getElementById("fastError").innerHTML = "";
+            }
+           if (rapidCAsString.value == "") {
+               rapidCAsString.style.border ="2px solid red";
+               document.getElementById("rapidError").innerHTML = "<br><span style='color: red;'>* Field must not be empty</span>";
+               countEVCharge = countEVCharge + 1;
+           } else if ( rapid<0 || rapid>100) {
+                rapidCAsString.style.border ="2px solid red";
+                document.getElementById("rapidError").innerHTML = "<br><span style='color: red;'>* Value must be from 0 to 100</span>";
+                countEVCharge = countEVCharge + 1;
+           }else {
+                document.getElementById("rapidError").innerHTML = "";
+           }
+           return countEVCharge;
+        }
+
+        function checkRollingWindow(){
+            var countRolling = 0;
+            var checkBox = document.getElementById("enableRolling")
+            if (checkBox.checked == true){
+                var rollingLigniteString = document.getElementById("rollingLignite");
+                var rollingFossilString = document.getElementById("rollingFossil");
+                var rollingSolarString = document.getElementById("rollingSolar");
+                var rollingWindString = document.getElementById("rollingWind");
+                var rollingTotalLoadString = document.getElementById("rollingTotal");
+
+                var rollingLignite = parseInt(document.getElementById("rollingLignite").value);
+                var rollingFossil = parseInt(document.getElementById("rollingFossil").value);
+                var rollingSolar = parseInt(document.getElementById("rollingSolar").value);
+                var rollingWind = parseInt(document.getElementById("rollingWind").value);
+                var rollingTotalLoad = parseInt(document.getElementById("rollingTotal").value);
+
+                if (rollingLigniteString.value == "") {
+                   rollingLigniteString.style.border ="2px solid red";
+                   document.getElementById("ligniteError").innerHTML = "<br><span style='color: red;'>* Field must not be empty</span>";
+                   countRolling = countRolling + 1;
+                } else if ( rollingLignite<0) {
+                   rollingLigniteString.style.border ="2px solid red";
+                   document.getElementById("ligniteError").innerHTML = "<br><span style='color: red;'>* Value must be greater than or equal to 0</span>";
+                   countRolling = countRolling + 1;
+                } else {
+                    document.getElementById("ligniteError").innerHTML = "";
+                }
+                if (rollingFossilString.value == "") {
+                   rollingFossilString.style.border ="2px solid red";
+                   document.getElementById("fossilError").innerHTML = "<br><span style='color: red;'>* Field must not be empty</span>";
+                   countRolling = countRolling + 1;
+                } else if ( rollingFossil<0) {
+                   rollingFossilString.style.border ="2px solid red";
+                   document.getElementById("fossilError").innerHTML = "<br><span style='color: red;'>* Value must be greater than or equal to 0</span>";
+                   countRolling = countRolling + 1;
+                } else {
+                    document.getElementById("fossilError").innerHTML = "";
+                }
+                if (rollingSolarString.value == "") {
+                   rollingSolarString.style.border ="2px solid red";
+                   document.getElementById("solarError").innerHTML = "<br><span style='color: red;'>* Field must not be empty</span>";
+                   countRolling = countRolling + 1;
+                } else if ( rollingSolar<0) {
+                   rollingSolarString.style.border ="2px solid red";
+                   document.getElementById("solarError").innerHTML = "<br><span style='color: red;'>* Value must be greater than or equal to 0</span>";
+                   countRolling = countRolling + 1;
+                } else {
+                    document.getElementById("solarError").innerHTML = "";
+                }
+                if (rollingWindString.value == "") {
+                   rollingWindString.style.border ="2px solid red";
+                   document.getElementById("windError").innerHTML = "<br><span style='color: red;'>* Field must not be empty</span>";
+                   countRolling = countRolling + 1;
+                } else if ( rollingWind<0) {
+                   rollingWindString.style.border ="2px solid red";
+                   document.getElementById("windError").innerHTML = "<br><span style='color: red;'>* Value must be greater than or equal to 0</span>";
+                   countRolling = countRolling + 1;
+                } else {
+                    document.getElementById("windError").innerHTML = "";
+                }
+                if (rollingTotalLoadString.value == "") {
+                   rollingTotalLoadString.style.border ="2px solid red";
+                   document.getElementById("loadError").innerHTML = "<br><span style='color: red;'>* Field must not be empty</span>";
+                   countRolling = countRolling + 1;
+                } else if ( rollingTotalLoad<0) {
+                   rollingTotalLoadString.style.border ="2px solid red";
+                   document.getElementById("loadError").innerHTML = "<br><span style='color: red;'>* Value must be greater than or equal to 0</span>";
+                   countRolling = countRolling + 1;
+                } else {
+                    document.getElementById("loadError").innerHTML = "";
+                }
+            }
+           return countRolling;
+        }
+
+        function restoreBorder(id){
+            var myElement = document.getElementById(id);
+            myElement.style.border= "";
+        }
+
+        function validateInputs(){
+            checkTime = checkTimeHor();
+            checkMeth = checkMethod();
+            checkConst = checkConstraints();
+            checkEV = checkNumEVs();
+            checkCat = checkEVCat();
+            checkCharge = checkEVCharge();
+            checkRoll = checkRollingWindow();
+            if (checkTime!=0 || checkEV!=0 || checkCat!=0 || checkCharge!=0 || checkRoll!=0 || checkMeth!=0 || checkConst!=0){
+                return false;
+            }
+            return true;
+        }
+
+        function validateInputFigs(){
+            var inputFolderGen = document.getElementById("ct4");
+            if (inputFolderGen.value == "") {
+               inputFolderGen.style.border ="2px solid red";
+               document.getElementById("figureError").innerHTML = "<br><span style='color: red;'>* Field must not be empty</span>";
+               return false;
+            } else {
+                document.getElementById("figureError").innerHTML = "";
+                restoreBorder("ct4")
+                return true;
+            }
+        }
+
+        function onSubmitData() {
+            if (validateInputs()){
+
+                var startDate = document.getElementById("yourStartDate").value;
+                var endDate = document.getElementById("yourEndDate").value;
+                var method = document.getElementById("method").value;
+                var constraints = document.getElementById("constraints").value;
+                var numOfEVs = parseInt(document.getElementById("numEVs").value);
+                var evCatA = parseInt(document.getElementById("catA").value);
+                var evCatB = parseInt(document.getElementById("catB").value);
+                var evCatC = parseInt(document.getElementById("catC").value);
+                var chargeCatSlow = parseInt(document.getElementById("slow").value);
+                var chargeCatFast = parseInt(document.getElementById("fast").value);
+                var chargeCatRapid = parseInt(document.getElementById("rapid").value);
+                var checkBox = document.getElementById("enableRolling")
+                if (checkBox.checked == true){
+                    var rollingWindow = parseInt(document.getElementById("enableRolling").value);
+                } else {
+                    var rollingWindow = 0;
+                }
+                var rollingLignite = parseInt(document.getElementById("rollingLignite").value);
+                var rollingFossil = parseInt(document.getElementById("rollingFossil").value);
+                var rollingSolar = parseInt(document.getElementById("rollingSolar").value);
+                var rollingWind = parseInt(document.getElementById("rollingWind").value);
+                var rollingTotalLoad = parseInt(document.getElementById("rollingTotal").value);
+                var inputFolder = document.getElementById("inputfoldername").value;
+
+                const data = {
+                    startDate:startDate,
+                    endDate:endDate,
+                    method:method,
+                    checksMode:constraints,
+                    numOfDrivers:numOfEVs,
+                    EVCategory:[evCatA,evCatB,evCatC],
+                    ChargerCategory:[chargeCatSlow,chargeCatFast,chargeCatRapid],
+                    rollingWindow:rollingWindow,
+                    rollingWindowsTable:[rollingLignite,rollingFossil,rollingSolar,rollingWind,rollingTotalLoad],
+                    folderToRead:inputFolder
+                };
+
+                fetch(reqstr2, {
+                    method: "POST",
+                    body: JSON.stringify(data)})
+                    .then(res => {return res.json()})
+                    .then(resd => {
+                        showAlert(resd, "alert-success");
+                }).catch(error => {showAlert(error,"alert-danger")});
+
+                alert("The form was submitted!\n\nClick 'OK' to begin 'Data Generation' procedure! ");
+            }
+            return false;
+        }
+
+        function onSubmitFigures() {
+            if (validateInputFigs()){
+                var inputFolderOrig = document.getElementById("inputFigureName").value;
+                var inputFolderGen = document.getElementById("ct4");
+
+                const data = {
+                    folderToRead:inputFolderOrig,
+                    folderToReadGeneratedFiguresOnly:inputFolderGen.options[inputFolderGen.selectedIndex].value
+                };
+
+                fetch(reqstr3, {
+                    method: "POST",
+                    body: JSON.stringify(data)})
+                    .then(res => {return res.json()})
+                    .then(resd => {
+                        showAlert(resd, "alert-success");
+                }).catch(error => {showAlert(error,"alert-danger")});
+
+                alert("The form was submitted!\n\nClick 'OK' to begin 'Figures Creation' procedure! ");
+             }
+             return false;
+        }
+
+  </script>
+
+</head>
+
+<body onload="init();">
+
+<div class="container-fluid">
+    <h1>Synthetic Dataset Generator - v0.1</h1><br>
+
+    <div id="notification" class="alert fade" role="alert" style="position:fixed;top:0;right:0;width:50%;">
+    </div>
+
+    <ul class="nav nav-tabs" id="myTab" role="tablist">
+      <li class="nav-item" role="presentation">
+        <button class="nav-link active" id="home-tab" data-bs-toggle="tab" data-bs-target="#home" type="button" role="tab" aria-controls="home" aria-selected="true">Data Generation</button>
+      </li>
+      <li class="nav-item" role="presentation">
+        <button class="nav-link" id="graphs-tab" data-bs-toggle="tab" data-bs-target="#graphs" type="button" role="tab" aria-controls="graphs" aria-selected="false">Figures</button>
+      </li>
+    </ul>
+
+    <div class="tab-content" id="myTabContent">
+        <!--
+            First Tab "Data Generation"
+        -->
+        <div class="tab-pane fade show active" id="home" role="tabpanel" aria-labelledby="home-tab">
+            <br>
+            <h4>Give the Time Horizon for your Dataset</h4>
+            <form id="startDate">
+                <label for="startDate">Start Date:</label>
+                <input type="date" id="yourStartDate" name="yourStartDate" onchange="restoreBorder(this.id)">
+                <span class="error" id="startDateError"></span>
+            </form>
+            <br>
+            <form id="endDate">
+                <label for="endDate">End Date:</label>
+                <input type="date" id="yourEndDate" name="yourEndDate" onchange="restoreBorder(this.id)">
+                <span class="error" id="endDateError"></span>
+                <span class="error" id="diffDateError"></span>
+            </form>
+            <br>
+            <hr>
+            <div class="row">
+                <div class="col-6">
+                    <h4>Choose Data Generation Technique</h4>
+                    <form id="methodForm" onchange="updateMethodDesc()">
+                      <label for="method">Generation technique: </label>
+                      <select name="method" id="method" onchange="restoreBorder(this.id)">
+                        <option value="Default"></option>
+                        <option value="HIST">Histogram Sampling</option>
+                        <option value="KDE">KDE Sampling</option>
+                        <option value="TimeGAN">Time-Series GAN</option>
+                      </select>
+                        <span class="error" id="methodError"></span>
+                    </form>
+                </div>
+                <div class="col-6">
+                    Description:
+                    <div id="methodDesc">
+                    </div>
+                </div>
+            </div>
+
+            <br>
+            <hr>
+            <div class="row">
+                <div class="col-6">
+                    <h4>Choose Constraints Mode</h4>
+                    <form id="constraintsForm" onchange="updateConstModeDesc()">
+                      <label for="constraints">Constraints mode: </label>
+                      <select name="constraints" id="constraints" onchange="restoreBorder(this.id)">
+                        <option value="Default"></option>
+                        <option value="Strict">Strict constraints</option>
+                        <option value="Looser">Looser constraints</option>
+                        <option value="Min">Absolutely necessary constraints</option>
+                      </select>
+                        <span class="error" id="constError"></span>
+                    </form>
+                </div>
+                <div class="col-6">
+                    Description:
+                    <div id="constDesc">
+                    </div>
+                </div>
+            </div>
+
+            <br>
+            <hr>
+            <h4>Give the number of Electric Vehicles</h4>
+            <form id="numEVsForm">
+                <label for="numEVs">Number of EVs (at least 1): </label>
+                <input type="number" id="numEVs" name="numEVs" min="1" onchange="restoreBorder(this.id)">
+                <span class="error" id="numEVsError"></span>
+            </form>
+
+            <br>
+            <hr>
+            <div class="row">
+                <div class="col-6">
+                    <h4>Give the percentages for the EVs Categories</h4>
+                    <form id="categoryEVsForm">
+                        <label for="catA">Category A (between 0 and 100): </label>
+                        <input type="number" id="catA" name="catA" min="0" max="100" onchange="restoreBorder(this.id)">
+                        <span class="error" id="catAError"></span>
+                        <br><br><label for="catB">Category B (between 0 and 100): </label>
+                        <input type="number" id="catB" name="catB" min="0" max="100" onchange="restoreBorder(this.id)">
+                        <span class="error" id="catBError"></span>
+                        <br><br><label for="catC">Category C (between 0 and 100): </label>
+                        <input type="number" id="catC" name="catC" min="0" max="100" onchange="restoreBorder(this.id)">
+                        <span class="error" id="catCError"></span>
+                        <span class="error" id="catError"></span>
+                    </form>
+                </div>
+                <div class="col-6">
+                    Description:<br>
+                    The percentages of the EV categories (A, B and C) correspond
+                    to the total number of EVs–from each category–that will be in the dataset.
+                    <div id="evPercDesc">
+                    </div>
+                </div>
+            </div>
+
+<!--            <br>-->
+<!--            <hr>-->
+<!--            <h4>Give the percentages for the EVs Categories</h4>-->
+<!--            <form id="categoryEVsForm">-->
+<!--                <label for="catA">Category A (between 0 and 100): </label>-->
+<!--                <input type="number" id="catA" name="catA" min="0" max="100" onchange="restoreBorder(this.id)">-->
+<!--                <span class="error" id="catAError"></span>-->
+<!--                <br><br><label for="catB">Category B (between 0 and 100): </label>-->
+<!--                <input type="number" id="catB" name="catB" min="0" max="100" onchange="restoreBorder(this.id)">-->
+<!--                <span class="error" id="catBError"></span>-->
+<!--                <br><br><label for="catC">Category C (between 0 and 100): </label>-->
+<!--                <input type="number" id="catC" name="catC" min="0" max="100" onchange="restoreBorder(this.id)">-->
+<!--                <span class="error" id="catCError"></span>-->
+<!--                <span class="error" id="catError"></span>-->
+<!--            </form>-->
+
+            <br>
+            <hr>
+            <div class="row">
+                <div class="col-6">
+                    <h4>Give the probabilities for EV Chargers Categories</h4>
+                    <form id="chargerCategory">
+                        <label for="slow">Slow (between 0 and 100): </label>
+                        <input type="number" id="slow" name="slow" min="0" max="100" onchange="restoreBorder(this.id)">
+                        <span class="error" id="slowError"></span>
+                        <br><br><label for="fast">Fast (between 0 and 100): </label>
+                        <input type="number" id="fast" name="fast" min="0" max="100" onchange="restoreBorder(this.id)">
+                        <span class="error" id="fastError"></span>
+                        <br><br><label for="rapid">Rapid (between 0 and 100): </label>
+                        <input type="number" id="rapid" name="rapid" min="0" max="100" onchange="restoreBorder(this.id)">
+                        <span class="error" id="rapidError"></span>
+                    </form>
+                </div>
+                <div class="col-6">
+                    Description:<br>
+                    For each category of EV chargers (Slow, Fast and Rapid) set the probability
+                    of selecting a charger of a specific category, during the generation of the dataset.
+                    In a fairly large data set, these probabilities also reflect the percentages
+                    of each category on the total amount of the chargers.
+                    <div id="chargePercDesc">
+                    </div>
+                </div>
+            </div>
+
+<!--            <br>-->
+<!--            <hr>-->
+<!--            <h4>Give the probabilities for EV Chargers Categories</h4>-->
+<!--            <form id="chargerCategory">-->
+<!--                <label for="slow">Slow (between 0 and 100): </label>-->
+<!--                <input type="number" id="slow" name="slow" min="0" max="100" onchange="restoreBorder(this.id)">-->
+<!--                <span class="error" id="slowError"></span>-->
+<!--                <br><br><label for="fast">Fast (between 0 and 100): </label>-->
+<!--                <input type="number" id="fast" name="fast" min="0" max="100" onchange="restoreBorder(this.id)">-->
+<!--                <span class="error" id="fastError"></span>-->
+<!--                <br><br><label for="rapid">Rapid (between 0 and 100): </label>-->
+<!--                <input type="number" id="rapid" name="rapid" min="0" max="100" onchange="restoreBorder(this.id)">-->
+<!--                <span class="error" id="rapidError"></span>-->
+<!--            </form>-->
+
+            <br>
+            <hr>
+            <div class="row">
+                <div class="col-6">
+                    <h4>Perform Data Smoothing</h4>
+                    <form class="question">
+                        <input type="checkbox" id="enableRolling" name="enableRolling" value="1" />
+                        <label for="enableRolling">Apply Simple Moving Average </label><br>
+                    </form>
+                </div>
+                <div class="col-6">
+                    Description:<br>
+                    Apply additional smoothing on the 'Production and Consumption Data',
+                    through the simple moving average (SMA) technique. Smoothing is applied separately
+                    to the data of each of the variables, as you set the rolling window for each one of them.
+                    The selection of rolling window depends on the amount of smoothing desired,
+                    since increasing its value improves the smoothing at the expense of accuracy.
+                    <div id="rollingDesc">
+                    </div>
+                </div>
+            </div>
+
+<!--            <br>-->
+<!--            <hr>-->
+<!--            <h4>Perform Data Smoothing</h4>-->
+<!--            <form class="question">-->
+<!--                <input type="checkbox" id="enableRolling" name="enableRolling" value="1" />-->
+<!--                <label for="enableRolling">Enable Rolling Window </label><br>-->
+<!--            </form>-->
+
+            <form class="answer">
+                <br><label for="rollingLignite">Rolling Window for 'Lignite Generation': </label>
+                <input type="number" id="rollingLignite" name="rollingLignite" min="0" max="100" onchange="restoreBorder(this.id)">
+                <span class="error" id="ligniteError"></span>
+                <br><br><label for="rollingFossil">Rolling Window for 'Fossil Gas Generation': </label>
+                <input type="number" id="rollingFossil" name="rollingFossil" min="0" max="100" onchange="restoreBorder(this.id)">
+                <span class="error" id="fossilError"></span>
+                <br><br><label for="rollingSolar">Rolling Window for 'Solar Generation': </label>
+                <input type="number" id="rollingSolar" name="rollingSolar" min="0" max="100" onchange="restoreBorder(this.id)">
+                <span class="error" id="solarError"></span>
+                <br><br><label for="rollingWind">Rolling Window for 'Wind Generation': </label>
+                <input type="number" id="rollingWind" name="rollingWind" min="0" max="100" onchange="restoreBorder(this.id)">
+                <span class="error" id="windError"></span>
+                <br><br><label for="rollingTotal">Rolling Window for 'Total Load Consumption': </label>
+                <input type="number" id="rollingTotal" name="rollingTotal" min="0" max="100" onchange="restoreBorder(this.id)">
+                <span class="error" id="loadError"></span>
+            </form>
+
+
+            <br>
+            <hr>
+            <div class="row">
+                <div class="col-6">
+                    <h4>Input Files</h4>
+                    Give folder's name:
+                    <input type="text" id="inputfoldername" value="InputData" onchange="restoreBorder(this.id)">
+                    <div class="error"></div>
+                </div>
+                <div class="col-6">
+                    Description:<br>
+                    Enter the name of the folder from which you want the input data to be retrieved.
+                    Default name 'InputData' contains our original data.
+                    <div id="inputFilesDesc">
+                    </div>
+                </div>
+            </div>
+
+            <br>
+            <hr>
+            <form onsubmit="return onSubmitData()">
+               <input type="submit" value="Generate Data">
+            </form><br><br>
+
+
+        </div>
+        <!--
+            Second Tab "Figures"
+        -->
+        <div class="tab-pane fade" id="graphs" role="tabpanel" aria-labelledby="graphs-tab">
+            <br>
+
+            <div class="row">
+                <div class="col-6">
+                    <h4>Input Files for Original Data</h4>
+                    Give folder's name:
+                    <input type="text" id="inputFigureName" value="InputData">
+                </div>
+                <div class="col-6">
+                    Description:<br>
+                    Enter the name of the folder from which you want the input data to be retrieved.
+                    Default name 'InputData' contains our original data.
+                    <div id="inputFiguresDesc">
+                    </div>
+                </div>
+            </div>
+
+            <br>
+            <hr>
+            <div class="row">
+                <div class="col-6">
+                    <h4>Input files for Generated Data</h4>
+                    Choose the folder:
+                    <select id="ct4" onchange="restoreBorder(this.id)">
+                        <option></option>
+                    </select><br>
+                    <span class="error" id="figureError"></span>
+                </div>
+                <div class="col-6">
+                    Description:<br>
+                    Enter the name of the folder from which you want the output data to be retrieved.
+                    <div id="outputFiguresDesc">
+                    </div>
+                </div>
+            </div>
+
+<!--            <br>-->
+<!--            <hr>-->
+<!--            <h4>Input files for Generated Data</h4>-->
+<!--            Choose the folder:-->
+<!--            <select id="ct4">-->
+<!--                <option></option>-->
+<!--            </select><br>-->
+<!--            <span class="error" id="figureError"></span>-->
+
+            <br>
+            <hr>
+            <form onsubmit="return onSubmitFigures()">
+               <input type="submit" value="Create Figures">
+            </form><br><br>
+
+    </div>
+    </div>
+</div>
+</body>
+</html>
